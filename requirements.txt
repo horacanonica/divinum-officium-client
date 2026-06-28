@@ -1,0 +1,5 @@
+customtkinter>=5.2.2
+requests>=2.31.0
+weasyprint>=62.0
+ebooklib>=0.18
+pypdf>=4.0.0
