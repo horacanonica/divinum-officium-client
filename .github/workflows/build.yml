@@ -61,12 +61,12 @@ jobs:
         with:
           path: artifacts/
 
-      - name: Rename artifacts for clarity
+      - name: Flatten artifacts
         run: |
-          mv artifacts/DO-Client-linux/DO-Client    artifacts/DO-Client-linux
-          mv artifacts/DO-Client-windows/DO-Client.exe  artifacts/DO-Client-windows.exe
-          mv artifacts/DO-Client-macos/DO-Client    artifacts/DO-Client-macos
-          chmod +x artifacts/DO-Client-linux artifacts/DO-Client-macos
+          cp artifacts/DO-Client-linux/DO-Client    DO-Client-linux
+          cp artifacts/DO-Client-windows/DO-Client.exe  DO-Client-windows.exe
+          cp artifacts/DO-Client-macos/DO-Client    DO-Client-macos
+          chmod +x DO-Client-linux DO-Client-macos
 
       - name: Create GitHub Release
         env:
@@ -76,6 +76,6 @@ jobs:
           gh release create "$TAG" \
             --title "DO Client $TAG" \
             --generate-notes \
-            artifacts/DO-Client-linux \
-            artifacts/DO-Client-windows.exe \
-            artifacts/DO-Client-macos
+            DO-Client-linux \
+            DO-Client-windows.exe \
+            DO-Client-macos
