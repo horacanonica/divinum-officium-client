@@ -6,7 +6,7 @@ on:
       - 'v*'
 
 jobs:
-  build:
+  build-linux-windows:
     strategy:
       matrix:
         include:
@@ -16,9 +16,6 @@ jobs:
           - os: windows-latest
             artifact: DO-Client-windows
             binary: dist/DO-Client.exe
-          - os: macos-latest
-            artifact: DO-Client-macos
-            binary: dist/DO-Client
 
     runs-on: ${{ matrix.os }}
 
@@ -47,8 +44,38 @@ jobs:
           name: ${{ matrix.artifact }}
           path: ${{ matrix.binary }}
 
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt pyinstaller
+
+      - name: Build .app bundle
+        run: >
+          pyinstaller
+          --windowed
+          --name DO-Client
+          --add-data "config.py:."
+          app.py
+
+      - name: Zip .app bundle
+        run: cd dist && zip -r DO-Client-macos.zip DO-Client.app/
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DO-Client-macos
+          path: dist/DO-Client-macos.zip
+
   release:
-    needs: build
+    needs: [build-linux-windows, build-macos]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -63,10 +90,10 @@ jobs:
 
       - name: Flatten artifacts
         run: |
-          cp artifacts/DO-Client-linux/DO-Client    DO-Client-linux
-          cp artifacts/DO-Client-windows/DO-Client.exe  DO-Client-windows.exe
-          cp artifacts/DO-Client-macos/DO-Client    DO-Client-macos
-          chmod +x DO-Client-linux DO-Client-macos
+          cp artifacts/DO-Client-linux/DO-Client       DO-Client-linux
+          cp artifacts/DO-Client-windows/DO-Client.exe DO-Client-windows.exe
+          cp artifacts/DO-Client-macos/DO-Client-macos.zip DO-Client-macos.zip
+          chmod +x DO-Client-linux
 
       - name: Create GitHub Release
         env:
@@ -78,4 +105,4 @@ jobs:
             --generate-notes \
             DO-Client-linux \
             DO-Client-windows.exe \
-            DO-Client-macos
+            DO-Client-macos.zip

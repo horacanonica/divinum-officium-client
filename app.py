@@ -135,16 +135,22 @@ def generate_epub(html_content, output_path):
     book.spine = ["nav", chapter]
     epub.write_epub(str(output_path), book)
 
+def _html_to_pdf_bytes(html_content):
+    from xhtml2pdf import pisa
+    import io
+    buf = io.BytesIO()
+    pisa.CreatePDF(html_content, dest=buf)
+    return buf.getvalue()
+
 def generate_pdf_single(html_content, output_path):
-    from weasyprint import HTML, CSS
-    HTML(string=html_content).write_pdf(str(output_path))
+    with open(output_path, "wb") as f:
+        f.write(_html_to_pdf_bytes(html_content))
 
 def generate_pdf_booklet(html_content, output_path):
-    from weasyprint import HTML
     from pypdf import PdfWriter, PdfReader
     import io
 
-    pdf_bytes = HTML(string=html_content).write_pdf()
+    pdf_bytes = _html_to_pdf_bytes(html_content)
     reader = PdfReader(io.BytesIO(pdf_bytes))
     n = len(reader.pages)
 
