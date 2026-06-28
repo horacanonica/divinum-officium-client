@@ -103,10 +103,10 @@ def download_bundle(url, year, progress_cb=None):
 
 # ── Output generation ─────────────────────────────────────────────────────────
 
-def build_html(feasts, scope_supplement, include_english, css):
+def build_html(feasts, solemn_only, include_latin, include_english, css):
     sections = []
     for feast in feasts:
-        if scope_supplement and feast.get("source") not in ("Parish", "Diocesan/Parish"):
+        if solemn_only and feast.get("rank", 99) > 2:
             continue
         rank_lbl = feast.get("rank_label", "")
         source = feast.get("source", "")
@@ -116,7 +116,17 @@ def build_html(feasts, scope_supplement, include_english, css):
         )
         horas = feast.get("horas", {})
         for hora in config.HORAS:
-            content = horas.get(hora, "")
+            hora_data = horas.get(hora, {})
+            parts = []
+            if isinstance(hora_data, dict):
+                if include_latin and hora_data.get("latin"):
+                    parts.append(hora_data["latin"])
+                if include_english and hora_data.get("english"):
+                    parts.append(hora_data["english"])
+            else:
+                # legacy bundle format — single string, language already baked in
+                parts.append(hora_data)
+            content = "\n".join(parts)
             if content:
                 sections.append(f"<h3>{hora}</h3><div class='hora-content'>{content}</div>")
     body = "\n".join(sections) if sections else "<p>No feasts found for the selected options.</p>"
@@ -245,9 +255,9 @@ class App(ctk.CTk):
 
         # Scope
         ctk.CTkLabel(self, text="Scope", anchor="w").pack(fill="x", padx=20, pady=(16, 4))
-        self.scope_var = ctk.StringVar(value="supplement")
-        ctk.CTkRadioButton(self, text="Parish Supplement Only  (unique feasts for this calendar)", variable=self.scope_var, value="supplement").pack(anchor="w", padx=20)
-        ctk.CTkRadioButton(self, text="Full Calendar  (all feasts for the year)", variable=self.scope_var, value="full").pack(anchor="w", padx=20, pady=(4, 0))
+        self.scope_var = ctk.StringVar(value="all")
+        ctk.CTkRadioButton(self, text="All Feasts  (all feasts in this calendar's supplement)", variable=self.scope_var, value="all").pack(anchor="w", padx=20)
+        ctk.CTkRadioButton(self, text="I & II Class Only  (most solemn feasts)", variable=self.scope_var, value="solemn").pack(anchor="w", padx=20, pady=(4, 0))
 
         # Format
         ctk.CTkLabel(self, text="Format", anchor="w").pack(fill="x", padx=20, pady=(16, 4))
@@ -389,7 +399,8 @@ class App(ctk.CTk):
 
         feasts = cal_data.get("feasts", [])
         fmt = self.format_var.get()
-        supplement_only = self.scope_var.get() == "supplement"
+        solemn_only = self.scope_var.get() == "solemn"
+        include_latin = self.lang_latin.get()
         include_english = self.lang_english.get()
 
         if fmt == "epub":
@@ -409,7 +420,7 @@ class App(ctk.CTk):
         if not out_path.parent.exists():
             out_path = Path.home() / filename
 
-        html = build_html(feasts, supplement_only, include_english, css)
+        html = build_html(feasts, solemn_only, include_latin, include_english, css)
 
         self.gen_btn.configure(state="disabled", text="Generating...")
         self._set_status("Building document...")

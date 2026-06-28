@@ -1,7 +1,7 @@
 """App-wide constants and defaults."""
 
 APP_NAME = "Divinum Officium Client"
-APP_VERSION = "0.1.0"
+APP_VERSION = "0.1.3"
 
 # GitHub repo that hosts the generated bundles
 DEFAULT_GITHUB_REPO = "horacanonica/divinum-officium-FSSP-NorthAmerica"
